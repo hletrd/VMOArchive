@@ -1,0 +1,34 @@
+{%extends "template.html" %}
+{%block content %}
+<div class="jumbotron">
+	<h1 class="display-4">{{pagename}}</h1>
+</div>
+<table class="table">
+<thead>
+	<tr>
+		<th>날짜</th>
+		<th>이름</th>
+		{% if user.is_staff %}
+		<th></th>
+		{%endif%}
+	</tr>
+</thead>
+<tbody>
+{%for i in seminar%}
+<tr>
+	<th>{{i.date|date:"m월 d일"}}</th>
+	<td>{{i.member.name}}</td>
+	{% if user.is_staff %}
+	<td>
+		<a href="{{url}}/modify/{{i.id}}" class="btn btn-sm btn-outline-success"><i class="ri-edit-line"></i> 수정</a>
+		<a href="{{url}}/delete/{{i.id}}" class="btn btn-sm btn-outline-danger"><i class="ri-delete-bin-line"></i> 삭제</a>
+	</td>
+{%endif%}
+</tr>
+{%endfor%}
+</tbody>
+</table>
+{% if user.is_staff %}
+<a href="{{url}}/add" class="btn btn-outline-primary"><i class="ri-add-line"></i> 추가</a>
+{%endif%}
+{%endblock%}

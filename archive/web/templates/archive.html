@@ -1,0 +1,63 @@
+{%extends "template.html" %}
+{%block content %}
+{%for i in posts%}
+<div class="spacer-15"></div>
+<div class="card">
+	<div class="card-header">
+		<h6 class="card-title">
+			{{i.title}}
+		</h6>
+		{% if user.is_staff %}
+		<div class="btn-wrapper">
+			<a href="/archive/modify/{{i.id}}" class="btn btn-sm btn-outline-success"><i class="ri-edit-line"></i> 수정</a>
+			<a href="/archive/delete/{{i.id}}" class="btn btn-sm btn-outline-danger"><i class="ri-delete-bin-line"></i> 삭제</a>
+		</div>
+		{%endif%}
+	</div>
+	<div class="card-body">
+		<p class="card-text">
+			{% autoescape off %}
+			<small class="text-muted">{{i.content}}</small>
+			{% endautoescape %}
+		</p>
+	</div>
+	<div class="card-footer">
+		{%for j in i.files.all%}
+		<p class="card-text">
+			<a href="/archive/download/{{j.path_raw}}" class="btn btn-sm btn-outline-primary"><i class="ri-download-2-line"></i> {{j.name}}</a>
+			{%if j.metadata != ''%}
+			<div class="alert alert-info" role="alert">
+				<small class="text-muted">{{j.metadata|slice:'0:200'}}...</small>
+			</div>
+			{%endif%}
+		</p>
+		{%endfor%}
+	</div>
+</div>
+{%endfor%}
+<div class="spacer-15"></div>
+<div class="row">
+	{% if user.is_staff %}
+<div class="col-md-3">
+<a class="btn btn-outline-info" style="display: flex; float: left;" href="/archive/upload">Upload</a>
+</div>
+{%endif%}
+<div class="col-md-12">
+<ul class="pagination justify-content-center">
+	{% if 1 < pages.0 %}
+	<li class="page-item">
+		<a class="page-link" href="/archive/1"><span>&laquo;</span></a>
+	</li>
+	{%endif%}
+	{%for i in pages%}
+	<li class="page-item{%if i == posts.number%} active{%endif%}"><a class="page-link" href="/archive/{{i}}">{{i}}</a></li>
+	{%endfor%}
+	{% if num_pages >= last_page %}
+	<li class="page-item">
+		<a class="page-link" href="/archive/{{num_pages}}"><span>&raquo;</span></a>
+	</li>
+	{%endif%}
+</ul>
+</div>
+</div>
+{%endblock%}

@@ -1,0 +1,56 @@
+{%extends "template.html" %}
+{%block content %}
+<div class="spacer-15"></div>
+<div class="jumbotron">
+	<h1 class="display-4">VMO mass mailing</h1>
+</div>
+<div class="row justify-content-md-center">
+<div class="col-lg-8">
+<form method="POST" action="/mass">
+	{%if error%}
+	<div class="alert alert-warning">
+		{{error}}
+	</div>
+	{%endif%}
+	<div class="row mb-3">
+		<label class="form-label col-sm-3">Recipient</label>
+		<div class="col-sm-9">
+			<p id="recipient"></p>
+			<input type="hidden" id="inp-recipient" name="recipient" value="">
+			<label class="form-label col-sm-9" id="range-label">Set number of s(s): {{range}}</label>
+			<input type="range" name="range_" class="form-range col-sm-9" min="0" max="10" value="{{range}}" onchange="change()" id="range">
+		</div>
+		
+	</div>
+	<div class="row mb-3">
+		<label class="form-label col-sm-3">Subject</label>
+		<div class="col-sm-9">
+			<input type="text" class="form-control" name="subject" value="{{subject}}">
+		</div>
+	</div>
+	<div class="row mb-3">
+		<label class="form-label col-sm-3">Content</label>
+		<div class="col-sm-9">
+			<textarea class="form-control" name="content" rows="15">{{content}}</textarea>
+		</div>
+	</div>
+	{%csrf_token%}
+	<div class="row">
+		<div class="col-sm-4 d-grid offset-sm-8">
+			<button type="submit" class="btn btn-dark">Send</button>
+		</div>
+	</div>
+</form>
+</div>
+</div>
+<script>
+function change() {
+	var num = document.getElementById('range').value;
+	var result = 'ma' + 's'.repeat(num) + '@altair.snu.ac.kr';
+	document.getElementById('recipient').innerHTML = result;
+	document.getElementById('range-label').innerHTML = 'Set number of s(s): ' + num;
+	document.getElementById('inp-recipient').value = result;
+}
+change();
+</script>
+{%endblock%}

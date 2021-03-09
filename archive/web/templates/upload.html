@@ -1,0 +1,52 @@
+{%extends "template.html" %}
+{%block content %}
+<div class="spacer-15"></div>
+<div class="row justify-content-md-center">
+<div class="col-lg-8">
+<form method="POST" action="{{url}}" enctype="multipart/form-data">
+	<div class="row mb-3">
+		<label class="form-label col-sm-3">날짜</label>
+		<div class="col-sm-9">
+			<input type="text" class="form-control" name="date" value="{{date}}">
+		</div>
+	</div>
+	<div class="row mb-3">
+		<label class="form-label col-sm-3">제목</label>
+		<div class="col-sm-9">
+			<input type="text" class="form-control" name="title" value="{{title}}">
+		</div>
+	</div>
+	<div class="row mb-3">
+		<label class="form-label col-sm-3">내용</label>
+		<div class="col-sm-9">
+			<textarea class="form-control" name="content" rows="15">{{content}}</textarea>
+		</div>
+	</div>
+	<div class="row mb-3">
+		<label class="form-label col-sm-3">첨부파일</label>
+		<div class="col-sm-9">
+		<input type="file" class="form-control" name="file" multiple>
+		{%if files%}
+		{%for i in files.all%}
+		<div id="file_prev_{{i.id}}">
+			<div class="spacer-15"></div>
+			<input type="hidden" name="file_prev[]" value="{{i.id}}">{{i.name}}
+				<button type="button" class="btn btn-outline-danger" onclick="document.getElementById('file_prev_{{i.id}}').remove()"><i class="ri-delete-bin-line"></i></button>
+		</div>
+		{%endfor%}
+		{%endif%}
+		</div>
+	</div>
+	{%csrf_token%}
+	{%if error%}
+	<div class="alert alert-warning">
+		{{error}}
+	</div>
+	{%endif%}
+	<div class="row">
+		<button type="submit" class="btn btn-dark col-sm-3 offset-sm-9">저장</button>
+	</div>
+</form>
+</div>
+</div>
+{%endblock%}

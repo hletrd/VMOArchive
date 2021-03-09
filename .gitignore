@@ -1,0 +1,7 @@
+# created by virtualenv automatically
+bin
+lib
+posts.db
+archive/db.sqlite3
+archive/uploads/*
+archive/*/__pycache__

@@ -1,0 +1,37 @@
+<h3>Status Sharing Schedule</h3>
+<br/>
+<table border="1" cellpadding="7" style="border-collapse:collapse;">
+	<thead>
+		<tr>
+			<th>날짜</th>
+			<th>발표자</th>
+		</tr>
+	</thead>
+	<tbody>
+	{%for i in statussharing%}
+		<tr{%if forloop.first %} style="background-color: #CA3142; color: #FFFFFF;"{%endif%}>
+			<td>{{i.date|date:"m월 d일"}}</td>
+			<td>{{i.member.name}}</td>
+		</tr>
+	{%endfor%}
+	</tbody>
+</table>
+<br/>
+<h3>Lab Seminar Schedule</h3>
+<br/>
+<table border="1" cellpadding="7" style="border-collapse:collapse;">
+	<thead>
+		<tr>
+			<th>날짜</th>
+			<th>발표자</th>
+		</tr>
+	</thead>
+	<tbody>
+	{%for i in seminar%}
+		<tr{%if forloop.first %} style="background-color: #CA3142; color: #FFFFFF;"{%endif%}>
+			<td>{{i.date|date:"m월 d일"}}</td>
+			<td>{{i.member.name}}</td>
+		</tr>
+	{%endfor%}
+	</tbody>
+</table>

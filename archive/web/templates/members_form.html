@@ -1,0 +1,51 @@
+{%extends "template.html" %}
+{%block content %}
+<div class="spacer-15"></div>
+<div class="row justify-content-md-center">
+<div class="col-lg-8">
+<form method="POST" action="{{url}}">
+	<div class="row mb-3">
+		<label class="form-label col-sm-3">이름</label>
+		<div class="col-sm-9">
+			<input type="text" class="form-control" name="name" value="{{name}}">
+		</div>
+	</div>
+	<div class="row mb-3">
+		<label class="form-label col-sm-3">생일</label>
+		<div class="col-sm-9">
+			<input type="text" class="form-control" name="birthday" value="{{birthday}}">
+		</div>
+	</div>
+	<div class="row mb-3">
+		<label class="form-label col-sm-3">전화번호</label>
+		<div class="col-sm-9">
+			<input type="tel" class="form-control" name="phone" value="{{phone}}">
+		</div>
+	</div>
+	<div class="row mb-3">
+		<label class="form-label col-sm-3">이메일</label>
+		<div class="col-sm-9">
+			<input type="email" class="form-control" name="email" value="{{email}}">
+		</div>
+	</div>
+	<div class="row mb-3">
+		<label class="form-label col-sm-3">Reminder 수신 이메일</label>
+		<div class="col-sm-9">
+			<input type="email" class="form-control" name="email_reminder" value="{{email_reminder}}">
+		</div>
+	</div>
+	{%csrf_token%}
+	{%if error%}
+	<div class="alert alert-warning">
+		{{error}}
+	</div>
+	{%endif%}
+	<div class="row">
+		<div class="col-sm-4 d-grid offset-sm-8">
+			<button type="submit" class="btn btn-dark">저장</button>
+		</div>
+	</div>
+</form>
+</div>
+</div>
+{%endblock%}

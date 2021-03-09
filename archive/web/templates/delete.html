@@ -1,0 +1,17 @@
+{%extends "template.html" %}
+{%block content %}
+<div class="spacer-15"></div>
+<div class="row justify-content-md-center">
+<div class="col-lg-8">
+<form method="POST" action="{{url}}">
+	<h3>{{name}}을(를) 삭제할까요?</h3>
+	{%csrf_token%}
+	<hr>
+	<div class="row">
+		<button type="button" onclick="history.go(-1)" class="btn btn-outline-primary col-sm-2 offset-sm-6">취소</button>&emsp;
+		<button type="submit" class="btn btn-outline-danger col-sm-3">삭제</button>
+	</div>
+</form>
+</div>
+</div>
+{%endblock%}

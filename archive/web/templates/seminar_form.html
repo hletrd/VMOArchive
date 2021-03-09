@@ -1,0 +1,31 @@
+{%extends "template.html" %}
+{%block content %}
+<div class="spacer-15"></div>
+<div class="row justify-content-md-center">
+<div class="col-lg-8">
+<form method="POST" action="{{url}}">
+	<div class="row mb-3">
+		<label class="form-label col-sm-3">발표자</label>
+		<div class="col-sm-9">
+			{{form.member}}
+		</div>
+	</div>
+	<div class="row mb-3">
+		<label class="form-label col-sm-3">날짜(Y-m-d)</label>
+		<div class="col-sm-9">
+			<input type="text" class="form-control" name="date" value="{{date}}">
+		</div>
+	</div>
+	{%csrf_token%}
+	{%if error%}
+	<div class="alert alert-warning">
+		{{error}}
+	</div>
+	{%endif%}
+	<div class="row">
+		<button type="submit" class="btn btn-dark col-sm-3 offset-sm-9">저장</button>
+	</div>
+</form>
+</div>
+</div>
+{%endblock%}
