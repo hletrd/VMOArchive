@@ -418,6 +418,29 @@ def seminar_delete(request, seminarid):
 		return redirect('/seminar')
 
 @login_required
+@user_passes_test(user_is_staff)
+def seminar_change(request, day):
+	seminar = models.VMOSeminar.objects.all()
+	try:
+		day = int(day)
+	except:
+		day = 0
+	days = datetime.timedelta(days=day)
+	for i in seminar:
+		i.date += days
+		i.save()
+	return redirect('/seminar')
+
+@login_required
+@user_passes_test(user_is_staff)
+def seminar_archive(request, seminarid):
+	seminar = models.VMOSeminar.objects.get(id=seminarid)
+	if seminar is not None:
+		form = forms.upload_form()
+		return render(request, 'upload.html', {'date': seminar.date.strftime("%Y-%m-%d"), 'title': 'Status Report {}'.format(seminar.date.strftime("%Y-%m-%d")), 'content': 'Status Report\n{}\n\n{}'.format(seminar.date.strftime("%Y-%m-%d"), seminar.member.name), 'url': '/archive/upload'})
+	return redirect('/seminar')
+
+@login_required
 def status_sharing(request):
 	statussharing = models.VMOStatusSharing.objects.all()
 	return render(request, 'seminar.html', {'seminar': statussharing, 'pagename': 'Status sharing 일정', 'url': '/status-sharing'})
@@ -467,3 +490,26 @@ def status_sharing_delete(request, statussharingid):
 			return render(request, 'delete.html', {'name': statussharing.member.name + '의 ' + statussharing.date.strftime("%m월 %d일 status sharing"), 'url': '/status-sharing/delete/{}'.format(statussharingid)})
 	else:
 		return redirect('/status-sharing')
+
+@login_required
+@user_passes_test(user_is_staff)
+def status_sharing_change(request, day):
+	statussharing = models.VMOStatusSharing.objects.all()
+	try:
+		day = int(day)
+	except:
+		day = 0
+	days = datetime.timedelta(days=day)
+	for i in statussharing:
+		i.date += days
+		i.save()
+	return redirect('/status-sharing')
+
+@login_required
+@user_passes_test(user_is_staff)
+def status_sharing_archive(request, statussharingid):
+	statussharing = models.VMOStatusSharing.objects.get(id=statussharingid)
+	if statussharing is not None:
+		form = forms.upload_form()
+		return render(request, 'upload.html', {'date': statussharing.date.strftime("%Y-%m-%d"), 'title': '', 'content': 'VMOLAB Seminar\n{}\n\n'.format(statussharing.date.strftime("%Y-%m-%d")), 'url': '/archive/upload'})
+	return redirect('/statussharing')

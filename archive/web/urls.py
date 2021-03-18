@@ -19,11 +19,15 @@ urlpatterns = [
 	path('seminar/add', views.seminar_add),
 	path('seminar/modify/<int:seminarid>', views.seminar_modify),
 	path('seminar/delete/<int:seminarid>', views.seminar_delete),
+	path('seminar/change/<str:day>', views.seminar_change),
+	path('seminar/archive/<int:seminarid>', views.seminar_archive),
 
 	path('status-sharing', views.status_sharing),
 	path('status-sharing/add', views.status_sharing_add),
 	path('status-sharing/modify/<int:statussharingid>', views.status_sharing_modify),
 	path('status-sharing/delete/<int:statussharingid>', views.status_sharing_delete),
+	path('status-sharing/change/<str:day>', views.status_sharing_change),
+	path('status-sharing/archive/<int:statussharingid>', views.status_sharing_archive),
 	
 	#path('init', views.init),
 	#path('index', views.index_file),

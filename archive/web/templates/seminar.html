@@ -3,6 +3,21 @@
 <div class="jumbotron">
 	<h1 class="display-4">{{pagename}}</h1>
 </div>
+{% if user.is_staff %}
+<a href="{{url}}/change/-7" class="btn btn-sm btn-outline-info"><i class="ri-arrow-up-fill"></i> 전체 일주일 당기기</a> <a href="{{url}}/change/7" class="btn btn-sm btn-outline-info"><i class="ri-arrow-down-fill"></i> 전체 일주일 미루기</a>
+<div class="spacer-15"></div>
+<div class="row g-3">
+	<div class="col-auto">
+		<label class="form-label">아니면 원하는 날만큼 미루기/당기기 </label>
+	</div>
+	<div class="col-auto">
+		<input class="form-control col-auto" type="number" min="-365" max="365" value="0" id="day" placeholder="당기기(음수) 미루기(양수)">
+	</div>
+	<div class="col-auto">
+		<button type="button" class="btn btn-outline-primary" onclick="change()">적용</button>
+	</div>
+</div>
+{%endif%}
 <table class="table">
 <thead>
 	<tr>
@@ -22,6 +37,7 @@
 	<td>
 		<a href="{{url}}/modify/{{i.id}}" class="btn btn-sm btn-outline-success"><i class="ri-edit-line"></i> 수정</a>
 		<a href="{{url}}/delete/{{i.id}}" class="btn btn-sm btn-outline-danger"><i class="ri-delete-bin-line"></i> 삭제</a>
+		<a href="{{url}}/archive/{{i.id}}" class="btn btn-sm btn-outline-warning"><i class="ri-share-forward-2-line"></i> 아카이브</a>
 	</td>
 {%endif%}
 </tr>
@@ -29,6 +45,11 @@
 </tbody>
 </table>
 {% if user.is_staff %}
+<script>
+function change() {
+	location.href = '.{{url}}/change/' + document.getElementById('day').value; 
+}
+</script>
 <a href="{{url}}/add" class="btn btn-outline-primary"><i class="ri-add-line"></i> 추가</a>
 {%endif%}
 {%endblock%}
