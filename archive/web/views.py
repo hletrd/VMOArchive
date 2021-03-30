@@ -31,6 +31,11 @@ def index(request):
 def user_is_staff(user):
 	return user.is_staff
 
+def log_smtp(log):
+	with open('result.txt', 'a') as f:
+		f.write(str(log))
+		f.write("\n")
+
 class SendMail(threading.Thread):
 	def __init__(self, title, content, to):
 		threading.Thread.__init__(self)
@@ -39,16 +44,22 @@ class SendMail(threading.Thread):
 		msg['From'] = settings.MAIL_ID + '@' + settings.MAIL_DOMAIN
 		msg['To'] = to
 		self.msg = msg
+		try:
+			context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+			result = connection = smtplib.SMTP(settings.MAIL_SMTP, settings.MAIL_PORT)
+			result = connection.set_debuglevel(2)
+			result = connection.ehlo()
+			result = connection.starttls(context=context)
+			result = connection.ehlo()
+			result = connection.login(settings.MAIL_ID + '@' + settings.MAIL_DOMAIN, settings.MAIL_PW)
+			result = connection.sendmail(self.msg['From'], self.msg['To'], self.msg.as_string())
+			result = connection.quit()
+		except Exception as e:
+			log_smtp(e)
 
 	def run(self):
-		context = ssl.SSLContext(ssl.PROTOCOL_TLS)
-		connection = smtplib.SMTP(settings.MAIL_SMTP, settings.MAIL_PORT)
-		connection.ehlo()
-		connection.starttls(context=context)
-		connection.ehlo()
-		connection.login(settings.MAIL_ID + '@' + settings.MAIL_DOMAIN, settings.MAIL_PW)
-		connection.sendmail(self.msg['From'], self.msg['To'], self.msg.as_string())
-		connection.quit()
+		pass
+
 
 def reminder(request):
 	if request.GET.get('key', '') == settings.KEY:
@@ -69,7 +80,7 @@ def reminder(request):
 		
 		for i in recipients:
 			SM = SendMail(title, content, i)
-			SM.start()
+			#SM.start()
 			result += i + ', '
 		return HttpResponse(result)
 	else:
