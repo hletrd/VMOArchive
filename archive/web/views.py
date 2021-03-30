@@ -63,11 +63,15 @@ def reminder(request):
 		seminar = models.VMOSeminar.objects.all()[:5]
 		statussharing = models.VMOStatusSharing.objects.all()[:5]
 		content = render_to_string('reminder.html', {'seminar': seminar, 'statussharing': statussharing})
+
+		result = 'Sent mail: <br/><br/>' + content
+		result += '<br/><br/>To: '
 		
 		for i in recipients:
 			SM = SendMail(title, content, i)
 			SM.start()
-		return redirect('/')
+			result += i + ', '
+		return HttpResponse(result)
 	else:
 		return redirect('/')
 
@@ -366,7 +370,7 @@ def members_delete(request, memberid):
 	else:
 		return redirect('/members')
 
-@login_required
+#@login_required
 def seminar(request):
 	seminar = models.VMOSeminar.objects.all()
 	return render(request, 'seminar.html', {'seminar': seminar, 'pagename': 'Seminar 일정', 'url': '/seminar'})
@@ -440,7 +444,7 @@ def seminar_archive(request, seminarid):
 		return render(request, 'upload.html', {'date': seminar.date.strftime("%Y-%m-%d"), 'title': 'Status Report {}'.format(seminar.date.strftime("%Y-%m-%d")), 'content': 'Status Report\n{}\n\n{}'.format(seminar.date.strftime("%Y-%m-%d"), seminar.member.name), 'url': '/archive/upload'})
 	return redirect('/seminar')
 
-@login_required
+#@login_required
 def status_sharing(request):
 	statussharing = models.VMOStatusSharing.objects.all()
 	return render(request, 'seminar.html', {'seminar': statussharing, 'pagename': 'Status sharing 일정', 'url': '/status-sharing'})
