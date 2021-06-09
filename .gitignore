@@ -5,3 +5,4 @@ posts.db
 archive/db.sqlite3
 archive/uploads/*
 archive/*/__pycache__
+archive/static/*
