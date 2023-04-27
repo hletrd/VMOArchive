@@ -257,31 +257,32 @@ def calendar_add(request, calendarid):
 
 @login_required
 def mass(request):
-	if request.method == 'POST':
-		form = forms.mail_form(request.POST)
-		if form.is_valid():
-			if form.cleaned_data.get('recipient') == 'mass@altair.snu.ac.kr':
-				recipients = [settings.EMAIL_PROF]
-			elif form.cleaned_data.get('recipient') == 'masss@altair.snu.ac.kr':
-				recipients = []
-			else:
-				return render(request, 'mail_form.html', {'error': '잘못된 입력값이 있습니다.', 'range': form.cleaned_data.get('range_', 2), 'subject': form.cleaned_data.get('subject', ''), 'content': form.cleaned_data.get('content', '')})
-			members = models.VMOMember.objects.all()
-			for i in members:
-				if re.match(r'[^@]+@[^.]+\..*', i.email_reminder):
-					recipients.append(i.email_reminder)
+  if request.method == 'POST':
+    form = forms.mail_form(request.POST)
+    if form.is_valid():
+      if form.cleaned_data.get('recipient') == 'mass@altair.snu.ac.kr':
+        recipients = [settings.EMAIL_PROF]
+      elif form.cleaned_data.get('recipient') == 'masss@altair.snu.ac.kr':
+        recipients = []
+      else:
+        return render(request, 'mail_form.html', {'error': '잘못된 입력값이 있습니다.', 'range': form.cleaned_data.get('range_', 2), 'subject': form.cleaned_data.get('subject', ''), 'content': form.cleaned_data.get('content', '')})
+      members = models.VMOMember.objects.all()
+      for i in members:
+        if re.match(r'[^@]+@[^.]+\..*', i.email_reminder):
+          recipients.append(i.email_reminder)
 
-			subject = form.cleaned_data.get('subject', '(No subject)')
-			content = form.cleaned_data.get('content', '(No content)').replace("\n", "<br/>")
+      subject = form.cleaned_data.get('subject', '(No subject)')
+      content = form.cleaned_data.get('content', '(No content)').replace("\n", "<br/>")
 
-			for i in recipients:
-				SM = SendMail(subject, content, i)
-				SM.start()
-			return render(request, 'jumbotron.html', {'output': 'Mail successfully sent to: {}'.format(', '.join(recipients))})
-		else:
-			return render(request, 'mail_form.html', {'error': '잘못된 입력값이 있습니다.', 'range': form.cleaned_data.get('range_', 2), 'subject': form.cleaned_data.get('subject', ''), 'content': form.cleaned_data.get('content', '')})
-	else:
-		return render(request, 'mail_form.html', {'range': 2})
+      for i in recipients:
+        SM = SendMail(subject, content, i)
+        SM.start()
+      return render(request, 'jumbotron.html', {'output': 'Mail successfully sent to: {}'.format(', '.join(recipients))})
+    else:
+      return render(request, 'mail_form.html', {'error': '잘못된 입력값이 있습니다.', 'range': form.cleaned_data.get('range_', 2), 'subject': form.cleaned_data.get('subject', ''), 'content': form.cleaned_data.get('content', '')})
+  else:
+    return render(request, 'mail_form.html', {'range': 2})
+
 def server_update(request):
   if request.GET.get('key', '') != settings.KEY:
     return redirect('/')
