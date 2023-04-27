@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.http import HttpResponse, FileResponse
+from django.http import HttpResponse, FileResponse, HttpResponseRedirect, JsonResponse
 from django.core.paginator import Paginator
 
 from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
@@ -16,6 +16,13 @@ import random, string
 import datetime
 import os
 import re
+import requests
+import subprocess
+import base64
+from PIL import Image, ImageDraw, ImageFont
+import sqlite3
+import io
+import math
 
 import PyPDF2
 from pptx import Presentation
@@ -113,6 +120,157 @@ def mass(request):
 			return render(request, 'mail_form.html', {'error': '잘못된 입력값이 있습니다.', 'range': form.cleaned_data.get('range_', 2), 'subject': form.cleaned_data.get('subject', ''), 'content': form.cleaned_data.get('content', '')})
 	else:
 		return render(request, 'mail_form.html', {'range': 2})
+def server_update(request):
+  if request.GET.get('key', '') != settings.KEY:
+    return redirect('/')
+
+  conn = sqlite3.connect(settings.DB_SERVER)
+  c = conn.cursor()
+
+  c.execute('CREATE TABLE IF NOT EXISTS `status`(`id` INTEGER PRIMARY KEY AUTOINCREMENT, `servername` TEXT, `status` INT, `time` DATETIME);')
+  c.execute('CREATE INDEX IF NOT EXISTS `servername` ON `status` (`servername`);')
+  conn.commit()
+
+  for i in settings.SERVERS:
+    command = ['/usr/bin/fping', '-c1', '-t500', i+'.snu.ac.kr']
+    status = subprocess.call(command) == 0
+    c.execute("INSERT INTO `status`(`servername`, `status`, `time`) VALUES (?,?,datetime('now', 'localtime'));", (i, status))
+  conn.commit()
+  return HttpResponse('')
+
+def create_graph(servername, width=240, height=60, hours=24):
+  conn = sqlite3.connect(settings.DB_SERVER)
+  c = conn.cursor()
+
+  now = datetime.datetime.now()
+
+  c.execute("SELECT * FROM `status` WHERE `servername`=? AND `time`>datetime('now', '-" + str(hours) + " hours');", (servername, ))
+  data = c.fetchall()
+
+  result = Image.new("RGBA", (hours*60, height), (255, 255, 255, 0))
+  d = ImageDraw.Draw(result)
+
+  color = {
+    0: '#dc3545',
+    1: '#20c997'
+  }
+
+  for i in data:
+    date = datetime.datetime.strptime(i[3], '%Y-%m-%d %H:%M:%S')
+    delta = now - date
+    seconds = delta.total_seconds()
+    mins = seconds / 60
+
+    xy = [hours*60 - mins, 0, hours*60, height]
+    d.rectangle(xy, fill=color[i[2]])
+
+  offset = now.minute
+  left = now + datetime.timedelta(hours=-hours)
+  for i in range(hours+1):
+    time = left + datetime.timedelta(hours=i)
+    if time.hour%24 == 0:
+      d.line([-offset+i*60, 0, -offset+i*60, height], '#555', width=2)
+    elif time.hour%24 == 6 or time.hour%24 == 12 or time.hour%24 == 18:
+      d.line([-offset+i*60, 0, -offset+i*60, height], '#888', width=2)
+    else:
+      d.line([-offset+i*60, 0, -offset+i*60, height], '#fff')
+
+  font = ImageFont.truetype('../opensans.ttf', 17)
+
+  result = result.resize([width, height], Image.BICUBIC)
+
+  box_w = 120
+  box_h = 120
+  for i in range(hours+1):
+    time = left + datetime.timedelta(hours=i)
+    if time.hour % 6 != 0: continue
+    temp = Image.new("RGBA", (box_w, box_h), (255, 255, 255, 0))
+    drawtemp = ImageDraw.Draw(temp)
+    drawtemp.text((box_w/2, box_h/2), '{:02d}:00'.format(time.hour), '#333', font, anchor='mm')
+    temp = temp.rotate(90)
+    result.paste(temp, (int(
+      -offset/60/hours*width #minute offset
+      +i/hours*width #hour positioning
+      #+width/hours*1 #width compensation
+      -box_w*0.5 #accounting bounding box size
+      -1), int(-box_h*0.5+30)), temp)
+
+  buffer = io.BytesIO()
+  result.save(buffer, 'png')
+  return buffer.getvalue()
+
+
+from threading import Thread
+def ping(index, result, address):
+  command = ['/usr/bin/fping', '-c1', '-t100', address]
+  result[index] = subprocess.call(command) == 0
+
+@login_required
+def server(request):
+  width = 320
+  height = 30
+  hours = 48
+
+  result = []
+  result_ping = [False for i in range(len(settings.SERVERS))]
+  threads = []
+  for k, host in enumerate(settings.SERVERS):
+    t = Thread(target=ping, args=(k, result_ping, host+'.snu.ac.kr'))
+    t.start()
+    threads.append(t)
+    graph = create_graph(host, width*2, height*2, hours)
+    graph = base64.b64encode(graph).decode('ascii')
+    result.append({
+      'name': host,
+      'status': None,
+      'graph': graph
+    })
+  for i in threads:
+    i.join()
+  for i in range(len(settings.SERVERS)):
+    result[i]['status'] = result_ping[i]
+  return render(request, 'server.html', {'result': result, 'controllable': settings.SERVERS_CONTROLLABLE, 'width': width, 'height': height})
+
+@login_required
+def server_action(request, action):
+  servername = action.split('.')[0]
+  do = action.split('.')[-1]
+  if servername in settings.SERVERS_CONTROLLABLE:
+    if do == 'short':
+      r = requests.get(settings.SERVERS_CONTROLLABLE[servername] + '/run')
+      result = r.text
+    elif do == 'long':
+      r = requests.get(settings.SERVERS_CONTROLLABLE[servername] + '/long')
+      result = r.text
+  return redirect('/')
+
+def db_conn():
+  conn = pymysql.connect(host='localhost', user=settings.DB_USER, password=settings.DB_PASS, database=settings.DB_NAME, charset='utf8mb4', cursorclass=pymysql.cursors.DictCursor)
+  return conn.cursor()
+
+def serverroom(request):
+  c = db_conn()
+  c.execute("SELECT * FROM `cache`;")
+  now = c.fetchone()
+  now = {
+    'h': '{:.2f}'.format(now['h']),
+    't': '{:.2f}'.format(now['t']),
+  }
+
+  return render(request, 'serverroom.html', {'now': now})
+
+def serverroom_graph(request):
+  c = db_conn()
+  c.execute("SELECT UNIX_TIMESTAMP(`date`)*1000 AS `d`, ROUND(AVG(`h`),2) AS `h`, ROUND(AVG(`t`),2) AS `t` FROM `ht` WHERE `date` >= DATE_ADD(NOW(), INTERVAL -7 DAY) GROUP BY UNIX_TIMESTAMP(`date`) DIV 300 ORDER BY `id` DESC;")
+  ht = c.fetchall()
+
+  return JsonResponse(ht, safe=False)
+
+def serverroom_get(request):
+  c = db_conn()
+  c.execute("SELECT * FROM `cache`;")
+  now = c.fetchone()
+  return JsonResponse({'date': now['date'].strftime("%Y-%m-%dT%H:%M:%S"), 'h': '{:.2f}'.format(now['h']), 't': '{:.2f}'.format(now['t'])})
 
 @login_required
 @user_passes_test(user_is_staff)

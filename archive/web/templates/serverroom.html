@@ -1,0 +1,148 @@
+{%extends "template.html" %}
+{%block content %}
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap" rel="stylesheet">
+<script src="/static/jquery/jquery-3.6.0.min.js"></script>
+<script src="/static/amcharts/core.js"></script>
+<script src="/static/amcharts/charts.js"></script>
+<script src="/static/amcharts/themes/animated.js"></script>
+<script src="/static/amcharts/lang/en_US.js"></script>
+<style>
+	.ht {
+		background-color: #333;
+		color: white;
+		padding-top: 30px;
+		padding-bottom: 39px;
+	}
+	.temperature {
+		text-align: center;
+		font-size: 3.0em;
+		font-family: 'Roboto Mono', monospace;
+		color: #EC407A;
+	}
+	.humidity {
+		text-align: center;
+		font-size: 3.0em;
+		font-family: 'Roboto Mono', monospace;
+		color: #42A5F5;
+	}
+	.ht .cont-i {
+		display: inline-block;
+		position: relative;
+		top: 7px;
+	}
+	.ht .cont-data {
+		display: inline-block;
+	}
+	.chart {
+		margin-top: 20px;
+		height: 500px;
+	}
+	.col {
+		padding-left: 5px;
+		padding-right: 5px;
+	}
+	@media only screen and (max-width: 466px) {
+		.temperature {
+			border-bottom: #555 1px solid;
+			padding-bottom: 39px;
+		}
+		.humidity {
+			padding-top: 27px;
+		}
+	}
+</style>
+<div class="spacer-15"></div>
+<div class="jumbotron">
+	<h1 class="display-4">Server room status</h1>
+</div>
+<div class="content">
+	<div class="ht row">
+		<div class="temperature col">
+			<div class="cont-i"><i class="ri-temp-hot-line"></i></div> <div id="temperature" class="cont-data">{{now.t}}°C</div>
+		</div>
+		<div class="humidity col">
+			<div class="cont-i"><i class="ri-mist-line"></i></div> <div id="humidity" class="cont-data">{{now.h}}%</div>
+		</div>
+	</div>
+	<div class="chart">
+	</div>
+</div>
+<script>
+	$(document).ready(function(){
+		var refresh_chart = function() {
+			$.get('/serverroom/graph').done(function(data) {
+				chart.data = data;
+			});
+		};
+		setInterval(function() {
+			$.getJSON('/serverroom/get').done(function(result) {
+				$('#temperature').html(result.t + '°C');
+				$('#humidity').html(result.h + '%');
+			});
+		}, 200);
+		am4core.useTheme(am4themes_animated);
+	
+		chart = am4core.create("chart", am4charts.XYChart);
+		chart.paddingRight = 20;
+	
+		var dateAxis = chart.xAxes.push(new am4charts.DateAxis());
+		dateAxis.renderer.minGridDistance = 50;
+		dateAxis.renderer.grid.template.location = 0.5;
+		dateAxis.groupData = false;
+		dateAxis.dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss";
+		dateAxis.baseInterval = {
+			"timeUnit": "minute"
+		};
+	
+		var valueAxis1 = chart.yAxes.push(new am4charts.ValueAxis());
+		valueAxis1.title.text = "Temperature (°C)";
+		valueAxis1.title.fontSize = 12;
+		valueAxis1.numberFormatter = new am4core.NumberFormatter();
+		valueAxis1.numberFormatter.numberFormat = "#.0";
+		valueAxis1.adjustLabelPrecision = false;
+		valueAxis1.renderer.minGridDistance = 50;
+		valueAxis1.renderer.labels.template.fontSize = 10;
+	
+		var valueAxis2 = chart.yAxes.push(new am4charts.ValueAxis());
+		valueAxis2.renderer.opposite = true;
+		valueAxis2.renderer.grid.template.strokeOpacity = 0;
+		valueAxis2.title.text = "Humidity (%)";
+		valueAxis2.title.fontSize = 12;
+		valueAxis2.numberFormatter = new am4core.NumberFormatter();
+		valueAxis2.numberFormatter.numberFormat = "#.0";
+		valueAxis2.adjustLabelPrecision = false;
+		valueAxis2.renderer.minGridDistance = 50;
+		valueAxis2.renderer.labels.template.fontSize = 10;
+	
+		var series1 = chart.series.push(new am4charts.LineSeries());
+		series1.dataFields.valueY = "t";
+		series1.dataFields.dateX = "d";
+		series1.strokeWidth = 3;
+		series1.tensionX = 1;
+		series1.tensionY = 1;
+		
+		series1.name = "Temperature";
+		series1.tooltipText = "{name}: [bold]{valueY}[/]";
+		series1.yAxis = valueAxis1;
+	
+		var series2 = chart.series.push(new am4charts.LineSeries());
+		series2.dataFields.valueY = "h";
+		series2.dataFields.dateX = "d";
+		series2.strokeWidth = 3;
+		series2.tensionX = 1;
+		series2.tensionY = 1;
+		
+		series2.name = "Humidity";
+		series2.tooltipText = "{name}: [bold]{valueY}[/]";
+		series2.yAxis = valueAxis2;
+	
+		chart.legend = new am4charts.Legend();
+	
+		chart.cursor = new am4charts.XYCursor();
+	
+		refresh_chart();
+		setInterval(refresh_chart, 300000);
+	});
+	</script>
+{%endblock%}

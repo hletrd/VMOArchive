@@ -36,4 +36,15 @@ urlpatterns = [
 
 	path('reminder', views.reminder),
 	path('mass', views.mass),
+	path('server', views.server),
+	path('server/update', views.server_update),
+	
+	path('server/<path:action>', views.server_action),
+	path('server/<path:action>', views.server_action),
+	
+
+	path('serverroom', views.serverroom),
+	path('serverroom/graph', views.serverroom_graph),
+	path('serverroom/get', views.serverroom_get),
+	
 ]

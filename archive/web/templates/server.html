@@ -1,0 +1,49 @@
+{%extends "template.html" %}
+{%block content %}
+<div class="spacer-15"></div>
+<div class="jumbotron">
+	<h1 class="display-4">Server status</h1>
+</div>
+<div class="row justify-content-md-center">
+<div class="col-lg-8">
+	{%for server in result%}
+	<hr>
+		<div class="row">
+			<div class="col-md-4">
+				<h5><i class="ri-server-fill"></i> {{server.name}} {%if server.status%}<span class="badge bg-success">Alive</span>{%else%}<span class="badge bg-danger">Dead</span>{%endif%}</h5>
+			</div>
+			<div class="col-md-8">
+				<img style="float: right; width: {{width}}px; height: {{height}}px; margin-bottom: 10px;" src="data:image/png;base64, {{server.graph}}" />
+			</div>
+		</div>
+	{%if server.name in controllable %}
+	<button class="btn btn-primary btn-sm" id="{{server.name}}-short"><i class="ri-shut-down-line"></i> Power (short click)</button>
+	<button class="btn btn-danger btn-sm" id="{{server.name}}-long"><i class="ri-close-line"></i> Power (long click)</button>
+	{%endif%}
+	{%endfor%}
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+	{%for server in result%}
+	{%if server.name in controllable %}
+	$('#{{server.name}}-short').on('click', function() {
+		if (confirm('정말 누르시겠습니까?')) {
+			$.get('/server/{{server.name}}.short').done(function(){
+				alert('눌렀습니다.');
+			});
+		}
+	});
+	$('#{{server.name}}-long').on('click', function() {
+		if (confirm('정말 누르시겠습니까?')) {
+			$.get('/server/{{server.name}}.long').done(function(){
+				alert('눌렀습니다.');
+			});
+		}
+	});
+	{%endif%}
+	{%endfor%}
+});
+</script>
+</div>
+{%endblock%}
