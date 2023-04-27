@@ -1,5 +1,13 @@
 {%extends "template.html" %}
 {%block content %}
+{% if user.is_staff %}
+<div class="spacer-15"></div>
+<div class="row">
+	<div class="col-md-3">
+	<a class="btn btn-outline-info" style="display: flex; float: left;" href="/archive/upload">New post</a>
+	</div>
+	</div>
+{%endif%}
 {%for i in posts%}
 <div class="spacer-15"></div>
 <div class="card">
@@ -15,31 +23,39 @@
 		{%endif%}
 	</div>
 	<div class="card-body">
-		<p class="card-text">
+		<div class="card-text">
+
 			{% autoescape off %}
-			<small class="text-muted">{{i.content}}</small>
+			{%if i.content != ''%}
+			<small class="text-muted">
+				{{i.content|linebreaks}}
+			</small>
+			{%endif%}
+			{%for j in i.files.all%}
+			{%if j.metadata != ''%}
+			<div class="text-muted text-preview">
+				{{j.metadata|slice:'0:600'|linebreaks}}...
+			</div>
+			{%endif%}
+			{%endfor%}
 			{% endautoescape %}
-		</p>
+
+		</div>
 	</div>
 	<div class="card-footer">
 		{%for j in i.files.all%}
-		<p class="card-text">
-			<a href="/archive/download/{{j.path_raw}}" class="btn btn-sm btn-outline-primary"><i class="ri-download-2-line"></i> {{j.name}}</a>
-			{%if j.metadata != ''%}
-			<div class="alert alert-info" role="alert">
-				<small class="text-muted">{{j.metadata|slice:'0:200'}}...</small>
-			</div>
-			{%endif%}
-		</p>
+		<div class="card-text">
+			<a href="/archive/download/{{j.path_raw}}" class="btn btn-sm btn-outline-primary"><i class="ri-download-2-line"></i> {{j.name}}</a> <div class="hit muted">{{j.hit}} HITS</div>
+		</div>
 		{%endfor%}
 	</div>
 </div>
 {%endfor%}
 <div class="spacer-15"></div>
 <div class="row">
-	{% if user.is_staff %}
+{% if user.is_staff %}
 <div class="col-md-3">
-<a class="btn btn-outline-info" style="display: flex; float: left;" href="/archive/upload">Upload</a>
+<a class="btn btn-outline-info" style="display: flex; float: left;" href="/archive/upload">New post</a>
 </div>
 {%endif%}
 <div class="col-md-12">

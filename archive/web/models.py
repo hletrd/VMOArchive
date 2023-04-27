@@ -8,6 +8,7 @@ class VMOFile(models.Model):
 	path_raw = models.TextField(default='')
 	name = models.TextField(default='')
 	metadata = models.TextField(default='')
+	hit = models.IntegerField(default=0)
 
 	class Meta:
 		verbose_name = 'File'
