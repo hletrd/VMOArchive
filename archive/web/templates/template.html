@@ -55,6 +55,19 @@
 		.navbar-dark .navbar-toggler-icon {
 			background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.55%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 		}
+		.navbar-dark .navbar-nav .dropdown-menu .nav-link {
+			color: #212529;
+		}
+		.text-preview {
+			font-size: 0.8rem;
+		}
+		.hit {
+			margin-left: 11px;
+			display: inline-block;
+			font-size: 0.8rem;
+			padding-bottom: 5px;
+			color: #313539;
+		}
 	</style>
 </head>
 <body>
@@ -74,14 +87,33 @@
 					<li class="nav-item">
 						<a class="nav-link{%if request.path == '/members'%} active{%endif%}" aria-current="page" href="/members"><i class="ri-user-line"></i> Members</a>
 					</li>
-					<li class="nav-item">
-						<a class="nav-link{%if request.path == '/seminar'%} active{%endif%}" aria-current="page" href="/seminar"><i class="ri-calendar-event-line"></i> Seminar</a>
+					<li class="nav-item dropdown">
+						<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown_calendar" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="ri-calendar-event-line"></i> Calendar</a>
+						<ul class="dropdown-menu" aria-labelledby="navbarDropdown_calendar">
+							<li class="nav-item">
+								<a class="nav-link{%if request.path == '/seminar'%} active{%endif%}" aria-current="page" href="/seminar"><i class="ri-slideshow-line"></i> Seminar</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link{%if request.path == '/status-sharing'%} active{%endif%}" aria-current="page" href="/status-sharing"><i class="ri-chat-4-line"></i> Status sharing</a>
+							</li>
+						</ul>
 					</li>
-					<li class="nav-item">
-						<a class="nav-link{%if request.path == '/status-sharing'%} active{%endif%}" aria-current="page" href="/status-sharing"><i class="ri-calendar-event-line"></i> Status sharing</a>
-					</li>
-					<li class="nav-item">
+					<!--<li class="nav-item">
 						<a class="nav-link{%if request.path == '/mass'%} active{%endif%}" aria-current="page" href="/mass"><i class="ri-mail-line"></i> Mass</a>
+					</li>-->
+					<li class="nav-item dropdown">
+						<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown_monitor" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="ri-bar-chart-box-line"></i> Monitor</a>
+						<ul class="dropdown-menu" aria-labelledby="navbarDropdown_monitor">
+							<li class="nav-item">
+								<a class="nav-link{%if request.path == '/server'%} active{%endif%}" aria-current="page" href="/server"><i class="ri-server-line"></i> Server status</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link{%if request.path == '/serverroom'%} active{%endif%}" aria-current="page" href="/serverroom"><i class="ri-temp-hot-line"></i> Server room status</a>
+							</li>
+							<li class="nav-item">
+								<a target="_blank" class="nav-link" aria-current="page" href="/munin"><i class="ri-external-link-line"></i> MUNIN</a>
+							</li>
+						</ul>
 					</li>
 					{% if user.is_authenticated %}
 					<li class="nav-item">
