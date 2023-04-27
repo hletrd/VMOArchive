@@ -29,69 +29,231 @@ from pptx import Presentation
 
 import threading, ssl, smtplib
 from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
 from email.header import Header
+from email import encoders
+
+import pymysql.cursors
 
 # Create your views here.
 def index(request):
-	return show_list(request)
+  return show_list(request)
 
 def user_is_staff(user):
-	return user.is_staff
+  return user.is_staff
 
 def log_smtp(log):
-	with open('result.txt', 'a') as f:
-		f.write(str(log))
-		f.write("\n")
+  with open('result.txt', 'a') as f:
+    f.write(str(log))
+    f.write("\n")
 
 class SendMail(threading.Thread):
-	def __init__(self, title, content, to):
-		threading.Thread.__init__(self)
-		msg = MIMEText(content.encode('utf-8'), 'html', 'utf-8')
-		msg['Subject'] = Header(title, 'utf-8')
-		msg['From'] = settings.MAIL_ID + '@' + settings.MAIL_DOMAIN
-		msg['To'] = to
-		self.msg = msg
-		try:
-			context = ssl.SSLContext(ssl.PROTOCOL_TLS)
-			result = connection = smtplib.SMTP(settings.MAIL_SMTP, settings.MAIL_PORT)
-			result = connection.set_debuglevel(2)
-			result = connection.ehlo()
-			result = connection.starttls(context=context)
-			result = connection.ehlo()
-			result = connection.login(settings.MAIL_ID + '@' + settings.MAIL_DOMAIN, settings.MAIL_PW)
-			result = connection.sendmail(self.msg['From'], self.msg['To'], self.msg.as_string())
-			result = connection.quit()
-		except Exception as e:
-			log_smtp(e)
+  def __init__(self, title, content, to, cc=[], files=[]):
+    threading.Thread.__init__(self)
+    #msg = MIMEText(content.encode('utf-8'), 'html', 'utf-8')
+    msg = MIMEMultipart()
+    msg['Subject'] = Header(title, 'utf-8')
+    msg['From'] = settings.MAIL_ID + '@' + settings.MAIL_DOMAIN
+    msg['To'] = to
+    msg['CC'] = ','.join(cc)
+    msg.attach(MIMEText(content, 'html'))
 
-	def run(self):
-		pass
+    toaddrs = ','.join([to] + cc)
+    #self.msg = msg
+
+    for i in files:
+      file = MIMEBase('application', 'octet-stream')
+      file.set_payload(i['data'].encode())
+      encoders.encode_base64(file)
+      file.add_header('Content-Disposition', 'attachment; filename={}'.format(i['name']))
+      msg.attach(file)
+
+    try:
+      context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+      result = connection = smtplib.SMTP(settings.MAIL_SMTP, settings.MAIL_PORT)
+      result = connection.set_debuglevel(2)
+      result = connection.ehlo()
+      #result = connection.starttls(context=context)
+      result = connection.starttls()
+      result = connection.ehlo()
+      result = connection.login(settings.MAIL_ID + '@' + settings.MAIL_DOMAIN, settings.MAIL_PW)
+      result = connection.sendmail(msg['From'], toaddrs, msg.as_string())
+      result = connection.quit()
+    except Exception as e:
+      log_smtp(e)
+
+  def run(self):
+    pass
 
 
 def reminder(request):
-	if request.GET.get('key', '') == settings.KEY:
-		members = models.VMOMember.objects.all()
-		recipients = []
-		for i in members:
-			if re.match(r'[^@]+@[^.]+\..*', i.email_reminder):
-				recipients.append(i.email_reminder)
+  if request.GET.get('key', '') == settings.KEY:
+    members = models.VMOMember.objects.all()
+    recipients = []
+    for i in members:
+      if re.match(r'[^@]+@[^.]+\..*', i.email_reminder):
+        recipients.append(i.email_reminder)
 
-		title = 'Seminar Reminder'
+    title = 'Seminar Reminder (' + datetime.datetime.now().strftime("%-m월 %-d일 기준") + ')'
 
-		seminar = models.VMOSeminar.objects.all()[:5]
-		statussharing = models.VMOStatusSharing.objects.all()[:5]
-		content = render_to_string('reminder.html', {'seminar': seminar, 'statussharing': statussharing})
+    dates = ['일', '월', '화', '수', '목', '금', '토']
 
-		result = 'Sent mail: <br/><br/>' + content
-		result += '<br/><br/>To: '
-		
-		for i in recipients:
-			SM = SendMail(title, content, i)
-			#SM.start()
-			result += i + ', '
-		return HttpResponse(result)
-	else:
-		return redirect('/')
+    seminar = models.VMOSeminar.objects.filter(date__gte=datetime.datetime.now())[:5]
+    statussharing = list(models.VMOStatusSharing.objects.filter(date__gte=datetime.datetime.now())[:10])
+
+    seminar = list(map(lambda x: {'id': x.id, 'member': x.member, 'date': x.date.strftime("%-m월 %-d일 (") + dates[int(x.date.strftime("%w"))] + ")", 'date_raw': x.date}, seminar))
+    statussharing = list(map(lambda x: {'id': x.id, 'member': x.member, 'date': x.date.strftime("%-m월 %-d일 (") + dates[int(x.date.strftime("%w"))] + ")", 'date_raw': x.date}, statussharing))
+
+    for i in statussharing:
+      cal = models.VMOCalendar.objects.filter(targettype=0, targetid=i['id'])
+      if not cal.exists():
+        starttime = datetime.datetime.strptime(settings.TIME_STATUS, "%H:%M:%S").timetz()
+        endtime = datetime.datetime.strptime(settings.TIME_STATUS, "%H:%M:%S") + datetime.timedelta(hours=1)
+        calendar = models.VMOCalendar(calendarid=create_random_path(), targettype=0, targetid=i['id'], member=i['member'], date=i['date_raw'], starttime=starttime, endtime=endtime)
+        calendar.save()
+        i['cal'] = calendar.calendarid
+      else:
+        i['cal'] = cal.get().calendarid
+
+    for i in seminar:
+      cal = models.VMOCalendar.objects.filter(targettype=1, targetid=i['id'])
+      if not cal.exists():
+        starttime = datetime.datetime.strptime(settings.TIME_SEMINAR, "%H:%M:%S").timetz()
+        endtime = datetime.datetime.strptime(settings.TIME_SEMINAR, "%H:%M:%S") + datetime.timedelta(hours=1)
+        calendar = models.VMOCalendar(calendarid=create_random_path(), targettype=1, targetid=i['id'], member=i['member'], date=i['date_raw'], starttime=starttime, endtime=endtime)
+        calendar.save()
+        i['cal'] = calendar.calendarid
+      else:
+        i['cal'] = cal.get().calendarid
+
+    files = []
+    for i in statussharing:
+      cal = {}
+      cal['name'] = 'calendar_{}_{}.ics'.format(0, i['id'])
+      dtstamp = datetime.datetime.now().strftime("%Y%m%dT%H%M%S")
+      dtstart = datetime.datetime.combine(i['date_raw'], datetime.datetime.strptime(settings.TIME_STATUS, "%H:%M:%S").timetz())
+      dtstart = dtstart.strftime("%Y%m%dT%H%M%S")
+      dtend = datetime.datetime.combine(i['date_raw'], (datetime.datetime.strptime(settings.TIME_STATUS, "%H:%M:%S") + datetime.timedelta(hours=1)).timetz())
+      dtend = dtend.strftime("%Y%m%dT%H%M%S")
+      caltitle = i['member'].name + '의 '
+      caltitle += 'Status sharing'
+      description = caltitle
+      cal['data'] = render_to_string('calendar.ics', {'dtstamp': dtstamp, 'dtstart': dtstart, 'dtend': dtend, 'title': caltitle, 'description': description, 'calid': create_random_path()})
+      files.append(cal)
+
+    for i in seminar:
+      cal = {}
+      cal['name'] = 'calendar_{}_{}.ics'.format(1, i['id'])
+      dtstamp = datetime.datetime.now().strftime("%Y%m%dT%H%M%S")
+      dtstart = datetime.datetime.combine(i['date_raw'], datetime.datetime.strptime(settings.TIME_SEMINAR, "%H:%M:%S").timetz())
+      dtstart = dtstart.strftime("%Y%m%dT%H%M%S")
+      dtend = datetime.datetime.combine(i['date_raw'], (datetime.datetime.strptime(settings.TIME_SEMINAR, "%H:%M:%S") + datetime.timedelta(hours=1)).timetz())
+      dtend = dtend.strftime("%Y%m%dT%H%M%S")
+      caltitle = i['member'].name + '의 '
+      caltitle += 'Seminar'
+      description = caltitle
+      cal['data'] = render_to_string('calendar.ics', {'dtstamp': dtstamp, 'dtstart': dtstart, 'dtend': dtend, 'title': caltitle, 'description': description, 'calid': create_random_path()})
+      files.append(cal)
+
+    status_origin = datetime.datetime.strptime(settings.STATUS_ORIGIN, "%Y-%m-%d")
+    now = datetime.datetime.now()
+    delta = now - status_origin
+    due = status_origin + datetime.timedelta(days=math.ceil(delta.days/14)*14)
+    due = due.strftime("%-m/%-d (") + dates[int(due.strftime("%w"))] + ')'
+
+    content = render_to_string('reminder.html', {'seminar': seminar, 'statussharing': statussharing, 'due': due})
+
+    result = 'Sent mail: <br/><br/>' + content
+    result += '<br/><br/>To: '
+    
+    to = settings.EMAIL_MASS
+    cc = [settings.EMAIL_PROF]
+
+    SM = SendMail(title, content, to, cc, files=files)
+    result += to
+    #for i in recipients:
+    #  SM = SendMail(title, content, i)
+      #SM.start()
+    #  result += i + ', '
+    return HttpResponse(result)
+  else:
+    return redirect('/')
+
+def status_report(request):
+  if request.GET.get('key', '') == settings.KEY:
+    members = models.VMOMember.objects.all()
+    recipients = []
+    for i in members:
+      if re.match(r'[^@]+@[^.]+\..*', i.email_reminder):
+        recipients.append(i.email_reminder)
+
+    dates = ['일', '월', '화', '수', '목', '금', '토']
+
+    status_origin = datetime.datetime.strptime("2022-03-18", "%Y-%m-%d")
+    now = datetime.datetime.now()
+    delta = now - status_origin
+    due = status_origin + datetime.timedelta(days=math.ceil(delta.days/14)*14)
+
+    if not (datetime.timedelta(days=0) <= (due - datetime.datetime.now()) < datetime.timedelta(days=1)):
+      #pass
+      return HttpResponse('no')
+
+    due = due.strftime("%-m/%-d (") + dates[int(due.strftime("%w"))] + ')'
+    title = 'Status report due ' + due
+
+    seminar = models.VMOSeminar.objects.filter(date__gte=datetime.datetime.now())[:5]
+    statussharing = list(models.VMOStatusSharing.objects.filter(date__gte=datetime.datetime.now())[:10])
+
+    seminar = list(map(lambda x: {'member': x.member, 'date': x.date.strftime("%-m월 %-d일 (") + dates[int(x.date.strftime("%w"))] + ")"}, seminar))
+    statussharing = list(map(lambda x: {'member': x.member, 'date': x.date.strftime("%-m월 %-d일 (") + dates[int(x.date.strftime("%w"))] + ")"}, statussharing))
+
+    content = render_to_string('status_report.html', {'seminar': seminar, 'statussharing': statussharing, 'due': due})
+
+    result = 'Sent mail: <br/><br/>' + content
+    result += '<br/><br/>To: '
+    
+    to = settings.EMAIL_MASS
+    cc = [settings.EMAIL_PROF]
+
+    SM = SendMail(title, content, to, cc)
+    result += to
+    #for i in recipients:
+    #  SM = SendMail(title, content, i)
+      #SM.start()
+    #  result += i + ', '
+    return HttpResponse(result)
+  else:
+    return redirect('/')
+
+@login_required
+def calendar(request, calendarid):
+  cal = models.VMOCalendar.objects.get(calendarid=calendarid)
+  if cal != None:
+    dtstamp = datetime.datetime.now().strftime("%Y%m%dT%H%M%S")
+    dtstart = datetime.datetime.combine(cal.date, cal.starttime)
+    dtstart = dtstart.strftime("%Y%m%dT%H%M%S")
+    dtend = datetime.datetime.combine(cal.date, cal.endtime)
+    dtend = dtend.strftime("%Y%m%dT%H%M%S")
+    title = cal.member.name + '의 '
+    if cal.targettype == 1:
+      title += 'Seminar'
+    if cal.targettype == 0:
+      title += 'Status sharing'
+    
+    description = title
+    result = render_to_string('calendar.ics', {'dtstamp': dtstamp, 'dtstart': dtstart, 'dtend': dtend, 'title': title, 'description': description, 'calid': calendarid})
+    return HttpResponse(result, headers={'Content-Type': 'text/calendar', 'Content-Disposition': 'inline; filename="calendar.ics"'})
+  else:
+    return redirect('/')
+
+def calendar_add(request, calendarid):
+  cal = models.VMOCalendar.objects.get(calendarid=calendarid)
+  if cal != None:
+    HttpResponseRedirect.allowed_schemes.append('webcal')
+    return redirect('webcal://vmo.snu.ac.kr:8888/calendar/{}'.format(calendarid))
+  else:
+    return redirect('/')
 
 @login_required
 def mass(request):

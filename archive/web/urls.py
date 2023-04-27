@@ -34,9 +34,13 @@ urlpatterns = [
 	path('login', views.login_view),
 	path('logout', views.logout_view),
 
-	path('reminder', views.reminder),
 	path('mass', views.mass),
 	path('server', views.server),
+	path('calendar/<str:calendarid>', views.calendar),
+	path('calendar-add/<str:calendarid>', views.calendar_add),
+
+	path('reminder', views.reminder),
+	path('status-report', views.status_report),
 	path('server/update', views.server_update),
 	
 	path('server/<path:action>', views.server_action),

@@ -46,3 +46,14 @@ class VMOStatusSharing(models.Model):
 	date = models.DateField()
 	class Meta:
 		verbose_name = 'Status sharing'
+
+class VMOCalendar(models.Model):
+	calendarid = models.CharField(default='', max_length=50)
+	member = models.ForeignKey(VMOMember, on_delete=models.RESTRICT)
+	targettype = models.IntegerField() #0 for seminar, 1 for statussharing
+	targetid = models.IntegerField()
+	date = models.DateField()
+	starttime = models.TimeField()
+	endtime = models.TimeField()
+	class Meta:
+		verbose_name = 'Calendar'
