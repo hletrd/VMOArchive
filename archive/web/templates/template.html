@@ -68,6 +68,9 @@
 			padding-bottom: 5px;
 			color: #313539;
 		}
+		.search {
+			border: none;
+		}
 	</style>
 </head>
 <body>
@@ -126,7 +129,7 @@
 					{% endif %}
 				</ul>
 				<form method="GET" action="/archive" class="form-inline d-flex">
-					<input type="text" name="search" class="form-control" placeholder="Search" value="{{search}}">
+					<input type="text" name="search" class="form-control search" placeholder="Search" value="{{search}}">
 				</form>
 			</div>
 		</div>
